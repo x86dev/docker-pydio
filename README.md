@@ -1,0 +1,4 @@
+pydio-docker
+============
+
+Pydio Dockerfile
