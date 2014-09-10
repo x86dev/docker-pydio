@@ -22,7 +22,13 @@ RUN apt-get install -y pydio
 # Configuration
 # mysql config
 RUN sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/my.cnf
-
+RUN service mysql start && \
+    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio" && \
+    mysql -uroot -e "CREATE USER 'pydio'@'%' IDENTIFIED BY 'pydio'" && \
+    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'%' WITH GRANT OPTION" && \
+    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'127.0.0.1' WITH GRANT OPTION" && \
+    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'localhost' WITH GRANT OPTION"
+    
 # php-fpm config
 RUN sed -i -e "s/output_buffering=4096/output_buffering=Off/g" /etc/php5/apache2/php.ini
 RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" /etc/php5/apache2/php.ini
