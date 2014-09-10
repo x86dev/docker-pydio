@@ -40,6 +40,7 @@ ADD conf/pydio.conf /etc/apache2/sites-enabled/
 
 RUN apt-get install -y php5-mcrypt php5-mysql
 RUN php5enmod mcrypt
+RUN chown -R www-data /usr/share/pydio/data/
 
 VOLUME /usr/share/pydio/data/
 
