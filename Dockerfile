@@ -24,7 +24,7 @@ RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" /etc/php5/apache2/
 RUN rm /etc/apache2/sites-enabled/000-default.conf 
 ADD conf/pydio.conf /etc/apache2/sites-enabled/
 
-RUN apt-get install -y php5-mcrypt php5-mysql
+RUN apt-get install -y php5-mcrypt
 RUN php5enmod mcrypt
 RUN chown -R www-data /usr/share/pydio/data/
 
