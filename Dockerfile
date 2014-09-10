@@ -49,7 +49,7 @@ EXPOSE 80
 
 # ------------------------------------------------------------------------------
 # Add supervisord conf
-ADD conf/apache2.conf /etc/supervisor/conf.d/
+ADD conf/startup.conf /etc/supervisor/conf.d/
 
 # Start supervisor, define default command.
 CMD supervisord -c /etc/supervisor/supervisord.conf
