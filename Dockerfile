@@ -16,7 +16,7 @@ RUN apt-get install -y pydio
 
 # ------------------------------------------------------------------------------
 # php-fpm config
-RUN sed -i -e "s/output_buffering=4096/output_buffering=Off/g" /etc/php5/apache2/php.ini
+RUN sed -i -e "s/output_buffering=4096/output_buffering=off/g" /etc/php5/apache2/php.ini
 RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" /etc/php5/apache2/php.ini
 RUN sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 1G/g" /etc/php5/apache2/php.ini
 RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" /etc/php5/apache2/php.ini
@@ -33,6 +33,7 @@ VOLUME /usr/share/pydio/data/
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
+EXPOSE 443
 
 # ------------------------------------------------------------------------------
 # Add supervisord conf
