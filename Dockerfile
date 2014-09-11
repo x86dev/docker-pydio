@@ -56,10 +56,11 @@ RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5
 RUN unzip pydio-core-5.3.2.zip
 RUN chown -R www-data:www-data /var/www/pydio-core-5.3.2
 RUN chmod -R 770 /var/www/pydio-core-5.3.2
+RUN chmod 777  /var/www/pydio-core-5.3.2/data/files/
+RUN chmod 777  /var/www/pydio-core-5.3.2/data/personal/
 
 WORKDIR /
 RUN ln -s /var/www/pydio-core-5.3.2/data pydio-data 
-
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
