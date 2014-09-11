@@ -14,8 +14,7 @@ RUN apt-get install -yq wget unzip nginx fontconfig-config fonts-dejavu-core \
     ufw php-pear libgd-tools libmcrypt-dev mcrypt mysql-server mysql-client
 
 # ------------------------------------------------------------------------------
-# Configuration
-# mysql config
+# Configure mysql
 RUN sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/my.cnf
 RUN service mysql start && \
     mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio;" && \
@@ -25,12 +24,10 @@ RUN service mysql start && \
     
 # ------------------------------------------------------------------------------
 # Configure php-fpm
-WORKDIR /etc/php5
-RUN ln -s /etc/php5/fpm/php.ini php.ini
-RUN sed -i -e "s/output_buffering\s*=\s*4096/output_buffering = Off/g" php.ini
-RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" php.ini
-RUN sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 1G/g" php.ini
-RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" php.ini
+RUN sed -i -e "s/output_buffering\s*=\s*4096/output_buffering = Off/g" /etc/php5/fpm/php.ini
+RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" /etc/php5/fpm/php.ini
+RUN sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 1G/g" /etc/php5/fpm/php.ini
+RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" /etc/php5/fpm/php.ini
 RUN php5enmod mcrypt
 
 # ------------------------------------------------------------------------------
@@ -45,6 +42,13 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 ADD conf/drop.conf /etc/nginx/
 ADD conf/php.conf /etc/nginx/
 ADD conf/pydio /etc/nginx/sites-enabled/
+
+# ------------------------------------------------------------------------------
+# Configure services
+RUN update-rc.d nginx defaults
+RUN update-rc.d php5-fpm defaults
+RUN update-rc.d mysql defaults
+
 # ------------------------------------------------------------------------------
 # Install Pydio
 WORKDIR /var/www
@@ -56,15 +60,13 @@ RUN chmod -R 770 /var/www/pydio-core-5.3.2
 WORKDIR /
 RUN ln -s /var/www/pydio-core-5.3.2/data pydio-data 
 
-RUN update-rc.d nginx defaults
-RUN update-rc.d php5-fpm defaults
-RUN update-rc.d mysql defaults
-
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
 EXPOSE 443
 
+# ------------------------------------------------------------------------------
+# Expose volumes
 VOLUME /pydio-data/files
 VOLUME /pydio-data/personal
 
