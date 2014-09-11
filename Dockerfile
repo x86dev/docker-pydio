@@ -14,7 +14,7 @@ RUN apt-get install -yq wget unzip nginx fontconfig-config fonts-dejavu-core \
     libjpeg-turbo8 libjpeg8 libmcrypt4 libtiff5 libvpx1 libxpm4 \
     lsof php5-fpm php5-common php5-json php5-cli php5-common \
     php5-gd php5-json php5-mcrypt php5-readline psmisc ssl-cert \
-    ufw php-pear libgd-tools libmcrypt-dev mcrypt php5-user-cache
+    ufw php-pear libgd-tools libmcrypt-dev mcrypt
 
 # ------------------------------------------------------------------------------
 # Configure php-fpm
