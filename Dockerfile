@@ -68,4 +68,4 @@ EXPOSE 443
 ADD conf/startup.conf /etc/supervisor/conf.d/
 
 # Start supervisor, define default command.
-CMD supervisord -c /etc/supervisor/supervisord.conf
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
