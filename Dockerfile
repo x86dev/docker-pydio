@@ -53,6 +53,9 @@ RUN chmod -R 770 /var/www/pydio-core-5.3.2
 
 VOLUME /var/www/pydio-core-5.3.2
 
+RUN update-rc.d nginx default
+RUN update-rc.d php5-fpm default
+RUN update-rc.d mysqld default
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
