@@ -7,6 +7,7 @@ MAINTAINER Kevin Delfour <kevin@delfour.eu>
 
 # ------------------------------------------------------------------------------
 # Install Base
+RUN apt-get update
 RUN apt-get install -yq wget unzip nginx fontconfig-config fonts-dejavu-core \
     libapache2-mod-php5 libapr1 libaprutil1 libaprutil1-dbd-sqlite3 \
     libaprutil1-ldap libfontconfig1 libfreetype6 libgd3 libjbig0 \
