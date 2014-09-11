@@ -24,22 +24,24 @@ RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" php.ini
 RUN php5enmod mcrypt
 
 # ------------------------------------------------------------------------------
-# Install Pydio
-RUN mkdir /tmp/pydio
-WORKDIR /tmp/pydio/
-RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip
-RUN unzip pydio-core-5.3.2.zip
-RUN mv pydio-core-5.3.2/* /usr/share/nginx/html/
-RUN chown -R www-data:www-data /usr/share/nginx/html/
-
-# ------------------------------------------------------------------------------
 # Configure nginx
+RUN mkdir /var/www
+RUN chown www-data:www-data /var/www
 RUN rm /etc/nginx/sites-enabled/*
 ADD conf/drop.conf /etc/nginx/
 ADD conf/php.conf /etc/nginx/
 ADD conf/pydio /etc/nginx/sites-enabled/
 
-VOLUME /usr/share/nginx/html/
+# ------------------------------------------------------------------------------
+# Install Pydio
+RUN mkdir /tmp/pydio
+WORKDIR /tmp/pydio/
+RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip
+RUN unzip pydio-core-5.3.2.zip
+RUN mv pydio-core-5.3.2/* /var/www/
+RUN chown -R www-data:www-data /var/www/
+
+VOLUME /var/www
 
 # ------------------------------------------------------------------------------
 # Expose ports.
