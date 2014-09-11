@@ -34,14 +34,12 @@ ADD conf/pydio /etc/nginx/sites-enabled/
 
 # ------------------------------------------------------------------------------
 # Install Pydio
-RUN mkdir /tmp/pydio
-WORKDIR /tmp/pydio/
+WORKDIR /var/www
 RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip
 RUN unzip pydio-core-5.3.2.zip
-RUN mv pydio-core-5.3.2/* /var/www/
 RUN chown -R www-data:www-data /var/www/
 
-VOLUME /var/www
+VOLUME /var/www/pydio-core-5.3.2
 
 # ------------------------------------------------------------------------------
 # Expose ports.
