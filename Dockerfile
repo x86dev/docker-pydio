@@ -53,15 +53,20 @@ RUN unzip pydio-core-5.3.2.zip
 RUN chown -R www-data:www-data /var/www/pydio-core-5.3.2
 RUN chmod -R 770 /var/www/pydio-core-5.3.2
 
-VOLUME /var/www/pydio-core-5.3.2
+WORKDIR /
+RUN ln -s /var/www/pydio-core-5.3.2/data pydio-data 
 
 RUN update-rc.d nginx defaults
 RUN update-rc.d php5-fpm defaults
 RUN update-rc.d mysql defaults
+
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
 EXPOSE 443
+
+VOLUME /pydio-data/files
+VOLUME /pydio-data/personal
 
 # ------------------------------------------------------------------------------
 # Add supervisord conf
