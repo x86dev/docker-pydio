@@ -26,8 +26,8 @@ RUN php5enmod mcrypt
 # ------------------------------------------------------------------------------
 # Install Pydio
 RUN mkdir /tmp/pydio
-RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip /tmp/pydio/
 WORKDIR /tmp/pydio/
+RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip
 RUN unzip pydio-core-5.3.2.zip
 RUN mv pydio-core-5.3.2/* /usr/share/nginx/html/
 RUN chown -R www-data:www-data /usr/share/nginx/html/
