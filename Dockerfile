@@ -55,7 +55,7 @@ VOLUME /var/www/pydio-core-5.3.2
 
 RUN update-rc.d nginx defaults
 RUN update-rc.d php5-fpm defaults
-RUN update-rc.d mysqld defaults
+RUN update-rc.d mysql defaults
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
