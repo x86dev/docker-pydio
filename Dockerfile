@@ -18,11 +18,10 @@ RUN apt-get install -yq wget unzip nginx fontconfig-config fonts-dejavu-core \
 # mysql config
 RUN sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/my.cnf
 RUN service mysql start && \
-    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio" && \
-    mysql -uroot -e "CREATE USER 'pydio'@'%' IDENTIFIED BY 'pydio'" && \
-    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'%' WITH GRANT OPTION" && \
-    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'127.0.0.1' WITH GRANT OPTION" && \
-    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'localhost' WITH GRANT OPTION"
+    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio;" && \
+    mysql -uroot -e "CREATE USER 'pydio'@'localhost' IDENTIFIED BY 'pydio';" && \
+    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'localhost' WITH GRANT OPTION;" && \
+    mysql -uroot -e "FLUSH PRIVILEGES;"
     
 # ------------------------------------------------------------------------------
 # Configure php-fpm
@@ -39,10 +38,13 @@ RUN php5enmod mcrypt
 RUN mkdir /var/www
 RUN chown www-data:www-data /var/www
 RUN rm /etc/nginx/sites-enabled/*
+RUN rm /etc/nginx/sites-available/*
+RUN sed -i -e"s/keepalive_timeout\s*65/keepalive_timeout 2/" /etc/nginx/nginx.conf
+RUN sed -i -e"s/keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" /etc/nginx/nginx.conf
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 ADD conf/drop.conf /etc/nginx/
 ADD conf/php.conf /etc/nginx/
 ADD conf/pydio /etc/nginx/sites-enabled/
-
 # ------------------------------------------------------------------------------
 # Install Pydio
 WORKDIR /var/www
@@ -63,7 +65,7 @@ EXPOSE 443
 
 # ------------------------------------------------------------------------------
 # Add supervisord conf
-ADD conf/php5-nginx.conf /etc/supervisor/conf.d/
+ADD conf/startup.conf /etc/supervisor/conf.d/
 
 # Start supervisor, define default command.
 CMD supervisord -c /etc/supervisor/supervisord.conf

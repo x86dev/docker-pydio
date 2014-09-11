@@ -11,13 +11,6 @@ server {
         location / {
         }
         
-        # this allows PHP to be run and PNG to be displayed in the /data/public folder
-        location ^~ /data/public/ {
-                location ~ \.php {
-                try_files $uri =404;
-                fastcgi_pass unix:/var/run/php5-fpm.sock;
-        }
-        
         location ~* \.(?:ico|css|js|gif|jpe?g|png)$ {
                 expires max;
                 add_header Pragma public;
