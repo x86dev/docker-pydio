@@ -52,15 +52,15 @@ RUN update-rc.d mysql defaults
 # ------------------------------------------------------------------------------
 # Install Pydio
 WORKDIR /var/www
-RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/5.3.2/pydio-core-5.3.2.zip
-RUN unzip pydio-core-5.3.2.zip
-RUN chown -R www-data:www-data /var/www/pydio-core-5.3.2
-RUN chmod -R 770 /var/www/pydio-core-5.3.2
-RUN chmod 777  /var/www/pydio-core-5.3.2/data/files/
-RUN chmod 777  /var/www/pydio-core-5.3.2/data/personal/
+RUN wget http://downloads.sourceforge.net/project/ajaxplorer/pydio/dev-channel/6.0.3/pydio-core-6.0.3.zip
+RUN unzip pydio-core-6.0.3.zip
+RUN chown -R www-data:www-data /var/www/pydio-core-6.0.3
+RUN chmod -R 770 /var/www/pydio-core-6.0.3
+RUN chmod 777  /var/www/pydio-core-6.0.3/data/files/
+RUN chmod 777  /var/www/pydio-core-6.0.3/data/personal/
 
 WORKDIR /
-RUN ln -s /var/www/pydio-core-5.3.2/data pydio-data 
+RUN ln -s /var/www/pydio-core-6.0.3/data pydio-data 
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80

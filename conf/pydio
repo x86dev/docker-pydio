@@ -2,7 +2,7 @@ server {
         listen 80;
         server_name localhost;
         
-        root /var/www/pydio-core-5.3.2;
+        root /var/www/pydio-core-6.0.3;
         index index.php;
         client_max_body_size 20G;
         access_log /var/log/nginx/pydio.access.log;
