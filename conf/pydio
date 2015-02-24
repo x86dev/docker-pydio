@@ -20,3 +20,73 @@ server {
         include drop.conf;
         include php.conf;
 }
+
+server {
+        listen 443 ssl;
+        ### Change the following line to match your website name
+        server_name localhost;
+        root /var/www/pydio-core-6.0.3;
+        index index.php;
+        ### If you changed the maximum upload size in PHP.ini, also change it below
+        client_max_body_size 5120M;
+
+        # Prevent Clickjacking
+        add_header X-Frame-Options "SAMEORIGIN";
+
+        # SSL Settings
+        ### If you are using different names for your SSL certificate and key, change them below:
+        ssl_certificate /etc/nginx/ssl/nginx.crt;
+        ssl_certificate_key /etc/nginx/ssl/nginx.key;
+        add_header Strict-Transport-Security "max-age=16070400; includeSubdomains";
+
+        # Set the custom error pages
+        error_page 404 = /data/public/404.html;
+        error_page 403 = /data/public/404.html;
+
+        # Logs
+        error_log /var/log/pydio.nginx.error.log;
+        ### Uncomment the line below if you don't want nginx logging access to the server.
+        #access_log off;
+
+        # Remove direct access to the following folders & files
+        location ~* ^/(?:\.|conf|data/(?:files|personal|logs|plugins|tmp|cache)|plugins/editor.zoho/agent/files) {
+                deny all;
+        }       
+        
+        location ~* /data/public/.*.(ser|htaccess)$ {
+                deny all;
+        }       
+        
+        # Stops the annoying error messages in the logs
+        location ~* ^/(favicon.ico|robots.txt) {
+                log_not_found off;
+        }       
+        
+        # WebDAV Rewrites
+        location /shares {
+                if (!-f $request_filename) {
+                        rewrite ^/shares /dav.php last;
+                        break;
+                }       
+                
+                if (!-d $request_filename) {
+                        rewrite ^/shares /dav.php last;
+                        break;
+                }       
+        }       
+        
+        # Enables PHP
+        location ~ \.php$ {
+                fastcgi_pass unix:/var/run/phph-fpm.socket;
+                try_files $uri =404;
+                fastcgi_param HTTPS on;
+                include fastcgi_params;
+        }       
+        
+        # Enables Caching
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+                expires 7d;
+                add_header Pragma public;
+                add_header Cache-Control "public, must-revalidate, proxy-revalidate";
+        }       
+}       

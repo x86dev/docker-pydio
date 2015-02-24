@@ -42,6 +42,8 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 ADD conf/drop.conf /etc/nginx/
 ADD conf/php.conf /etc/nginx/
 ADD conf/pydio /etc/nginx/sites-enabled/
+RUN mkdir /etc/nginx/ssl
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt -subj '/CN=localhost/O=My Company Name LTD./C=US'
 
 # ------------------------------------------------------------------------------
 # Configure services
