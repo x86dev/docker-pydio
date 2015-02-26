@@ -16,11 +16,11 @@ Download automated build from public Docker Hub Registry: docker pull kdelfour/p
 
 ## Usage
 
-    docker run -it -d -p 80:80 kdelfour/pydio-docker
+    docker run -it -d -p 80:80 -p 443:443 kdelfour/pydio-docker
     
 You can add a shared directory as a volume directory with the argument *-v /your-path/files/:/pydio-data/files/ -v /your-path/personal/:/pydio-data/personal/* like this :
 
-    docker run -it -d -p 80:80 -v /your-path/files/:/pydio-data/files/ -v /your-path/personal/:/pydio-data/personal/ kdelfour/pydio-docker
+    docker run -it -d -p 80:80 -p 443:443 -v /your-path/files/:/pydio-data/files/ -v /your-path/personal/:/pydio-data/personal/ kdelfour/pydio-docker
 
 A mysql server with a database is ready, you can use it with this parameters : 
 
