@@ -39,8 +39,6 @@ RUN rm /etc/nginx/sites-available/*
 RUN sed -i -e"s/keepalive_timeout\s*65/keepalive_timeout 2/" /etc/nginx/nginx.conf
 RUN sed -i -e"s/keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" /etc/nginx/nginx.conf
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-ADD conf/drop.conf /etc/nginx/
-ADD conf/php.conf /etc/nginx/
 ADD conf/pydio /etc/nginx/sites-enabled/
 RUN mkdir /etc/nginx/ssl
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt -subj '/CN=localhost/O=My Company Name LTD./C=US'
@@ -53,16 +51,17 @@ RUN update-rc.d mysql defaults
 
 # ------------------------------------------------------------------------------
 # Install Pydio
+ENV PYDIO_VERSION 6.0.5
 WORKDIR /var/www
-RUN wget http://garr.dl.sourceforge.net/project/ajaxplorer/pydio/stable-channel/6.0.3/pydio-core-6.0.3.zip
-RUN unzip pydio-core-6.0.3.zip
-RUN chown -R www-data:www-data /var/www/pydio-core-6.0.3
-RUN chmod -R 770 /var/www/pydio-core-6.0.3
-RUN chmod 777  /var/www/pydio-core-6.0.3/data/files/
-RUN chmod 777  /var/www/pydio-core-6.0.3/data/personal/
+RUN wget http://garr.dl.sourceforge.net/project/ajaxplorer/pydio/stable-channel/${PYDIO_VERSION}/pydio-core-${PYDIO_VERSION}.zip
+RUN unzip pydio-core-${PYDIO_VERSION}.zip
+RUN chown -R www-data:www-data /var/www/pydio-core
+RUN chmod -R 770 /var/www/pydio-core
+RUN chmod 777  /var/www/pydio-core/data/files/
+RUN chmod 777  /var/www/pydio-core/data/personal/
 
 WORKDIR /
-RUN ln -s /var/www/pydio-core-6.0.3/data pydio-data 
+RUN ln -s /var/www/pydio-core/data pydio-data 
 # ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
