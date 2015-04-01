@@ -1,4 +1,4 @@
-sserver {
+server {
         listen 80;
         server_name localhost;
         rewrite ^ https://$server_name$request_uri? permanent;
