@@ -43,5 +43,13 @@ Build it
 And run
 
     sudo docker run -d -p 80:80 -p 443:443 -v /your-path/files/:/pydio-data/files/ -v /your-path/personal/:/pydio-data/personal/ $USER/pydio-docker:latest
-    
-Enjoy !!    
+
+## After the installation
+
+To make sure that share feature will work, go to Main Pydio Option and add  :
+
+  * server URL : https//your_server_name
+  * download forlder : /var/www/pydio-core/data/public
+  * server download URL : https//your_server_name/data/public
+  
+Enjoy !!
