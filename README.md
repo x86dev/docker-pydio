@@ -49,7 +49,7 @@ And run
 To make sure that share feature will work, go to Main Pydio Option and add  :
 
   * server URL : https//your_server_name
-  * download forlder : /var/www/pydio-core/data/public
+  * download folder : /var/www/pydio-core/data/public
   * server download URL : https//your_server_name/data/public
   
 Enjoy !!
