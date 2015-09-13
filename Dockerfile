@@ -1,81 +1,63 @@
-# ------------------------------------------------------------------------------
-# Based on a work at https://github.com/docker/docker.
-# ------------------------------------------------------------------------------
 # Pull base image.
 FROM kdelfour/supervisor-docker
-MAINTAINER Kevin Delfour <kevin@delfour.eu>
+MAINTAINER Andreas Löffler <andy@x86dev.com>
 
-# ------------------------------------------------------------------------------
-# Install Base
-RUN apt-get update
-RUN apt-get install -yq wget unzip nginx fontconfig-config fonts-dejavu-core \
-    php5-fpm php5-common php5-json php5-cli php5-common php5-mysql\
+# Based on: https://github.com/kdelfour/pydio-docker
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+    wget nginx fontconfig-config fonts-dejavu-core \
+    php5-fpm php5-common php5-json php5-cli php5-common php5-mysql \
     php5-gd php5-json php5-mcrypt php5-readline psmisc ssl-cert \
     ufw php-pear libgd-tools libmcrypt-dev mcrypt mysql-server mysql-client
 
-# ------------------------------------------------------------------------------
-# Configure mysql
-RUN sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = 0.0.0.0/" /etc/mysql/my.cnf
-RUN service mysql start && \
-    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio;" && \
-    mysql -uroot -e "CREATE USER 'pydio'@'localhost' IDENTIFIED BY 'pydio';" && \
-    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO 'pydio'@'localhost' WITH GRANT OPTION;" && \
-    mysql -uroot -e "FLUSH PRIVILEGES;"
-    
-# ------------------------------------------------------------------------------
-# Configure php-fpm
-RUN sed -i -e "s/output_buffering\s*=\s*4096/output_buffering = Off/g" /etc/php5/fpm/php.ini
-RUN sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" /etc/php5/fpm/php.ini
-RUN sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 1G/g" /etc/php5/fpm/php.ini
-RUN sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" /etc/php5/fpm/php.ini
-RUN php5enmod mcrypt
+# Add Pydio as the only Nginx site.
+ADD pydio-nginx.conf /etc/nginx/sites-available/pydio
+RUN ln -s /etc/nginx/sites-available/pydio /etc/nginx/sites-enabled/pydio
+RUN rm /etc/nginx/sites-enabled/default
 
-# ------------------------------------------------------------------------------
-# Configure nginx
-RUN mkdir /var/www
-RUN chown www-data:www-data /var/www
-RUN rm /etc/nginx/sites-enabled/*
-RUN rm /etc/nginx/sites-available/*
-RUN sed -i -e"s/keepalive_timeout\s*65/keepalive_timeout 2/" /etc/nginx/nginx.conf
-RUN sed -i -e"s/keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" /etc/nginx/nginx.conf
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-ADD conf/pydio /etc/nginx/sites-enabled/
-RUN mkdir /etc/nginx/ssl
-RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt -subj '/CN=localhost/O=My Company Name LTD./C=US'
+# Install Pydio.
+RUN mkdir -p /var/www
+ENV PYDIO_VER 6.0.8
+RUN wget -P /tmp http://downloads.sourceforge.net/project/ajaxplorer/pydio/stable-channel/${PYDIO_VER}/pydio-core-${PYDIO_VER}.tar.gz
+RUN tar xvzf /tmp/pydio-core-${PYDIO_VER}.tar.gz -C /tmp
+RUN mv /tmp/pydio-core-${PYDIO_VER} /var/www/pydio-core
 
-# ------------------------------------------------------------------------------
-# Configure services
-RUN update-rc.d nginx defaults
-RUN update-rc.d php5-fpm defaults
-RUN update-rc.d mysql defaults
+# Expose default database credentials via ENV in order to ease overwriting.
+ENV DB_NAME pydio
+ENV DB_USER pydio
+ENV DB_PASS pydio
 
-# ------------------------------------------------------------------------------
-# Install Pydio
-ENV PYDIO_VERSION 6.0.5
-WORKDIR /var/www
-RUN wget http://garr.dl.sourceforge.net/project/ajaxplorer/pydio/stable-channel/${PYDIO_VERSION}/pydio-core-${PYDIO_VERSION}.zip
-RUN unzip pydio-core-${PYDIO_VERSION}.zip
-RUN mv pydio-core-${PYDIO_VERSION} pydio-core
-RUN chown -R www-data:www-data /var/www/pydio-core
-RUN chmod -R 770 /var/www/pydio-core
-RUN chmod 777  /var/www/pydio-core/data/files/
-RUN chmod 777  /var/www/pydio-core/data/personal/
+# Link volumes to actual directories.
+RUN ln -s /var/www/pydio-core/data /pydio-data
+RUN ln -s /var/lib/mysql/pydio /pydio-db
 
-WORKDIR /
-RUN ln -s /var/www/pydio-core/data pydio-data 
-# ------------------------------------------------------------------------------
 # Expose ports.
 EXPOSE 80
 EXPOSE 443
 
-# ------------------------------------------------------------------------------
-# Expose volumes
+# Expose volumes.
 VOLUME /pydio-data/files
 VOLUME /pydio-data/personal
+VOLUME /pydio-db
 
-# ------------------------------------------------------------------------------
-# Add supervisord conf
-ADD conf/startup.conf /etc/supervisor/conf.d/
+# Always re-configure database with current ENV when RUNning container, then monitor all services.
+RUN mkdir -p /srv
+ADD setup-pydio.sh            /srv/setup-pydio.sh
+ADD update-pydio.sh           /srv/update-pydio.sh
+ADD start-pydio.sh            /srv/start-pydio.sh
 
-# Start supervisor, define default command.
-CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+# Database stuff.
+ADD pydio-scheme.mysql        /srv/pydio-scheme.mysql
+ADD pydio-bootstrap.json      /srv/pydio-bootstrap.json
+
+RUN mkdir -p /etc/supervisor/conf.d
+ADD service-nginx.conf        /etc/supervisor/conf.d/nginx.conf
+ADD service-php5-fpm.conf     /etc/supervisor/conf.d/php5-fpm.conf
+ADD service-mysql.conf        /etc/supervisor/conf.d/mysql.conf
+
+# Clean up.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Start setting up everything.
+WORKDIR /srv
+CMD ["/srv/setup-pydio.sh"]
