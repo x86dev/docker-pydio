@@ -118,7 +118,8 @@ setup_pydio
 setup_database
 setup_nginx
 
-echo "Setup: Applying updates ..."
-/srv/update-pydio.sh
-
 echo "Setup: Done"
+
+if [ "$1" = "--start" ]; then
+    /srv/start-pydio.sh
+fi

@@ -60,4 +60,4 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Start setting up everything.
 WORKDIR /srv
-CMD ["/srv/setup-pydio.sh"]
+CMD ["/srv/setup-pydio.sh", "--start"]
