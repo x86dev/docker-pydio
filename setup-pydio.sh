@@ -1,6 +1,12 @@
 #!/bin/sh
 
-set -x
+set -e
+#set -x
+
+# Load our environment.
+PYDIO_CONFIG_DIR=/pydio-config
+PYDIO_CONFIG_FILE=${PYDIO_CONFIG_DIR}/pydio-env.sh
+[ -f "$PYDIO_CONFIG_FILE" ] && . "$PYDIO_CONFIG_FILE"
 
 setup_nginx()
 {
@@ -11,30 +17,33 @@ setup_nginx()
     echo "Setting up NginX for '$PYDIO_HOST' ..."
 
     if [ "$PYDIO_SSL_ENABLED" = "1" ]; then
-        ## @todo Separate key/crt directories?
-        PYDIO_SSL_CERT_PATH=/etc/ssl/private
-        if [ ! -f "$PYDIO_SSL_CERT_PATH/pydio.key" ]; then
-            # Generate the TLS certificate for our Tiny Tiny RSS server instance.
+        # Only generate the certificates once!
+        if [ ! -f "$PYDIO_CONFIG_DIR/pydio.key" ]; then
+            echo "Generating webserver certificates ..."
+            # Generate the TLS certificate for our Pydio server instance.
             openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
                 -subj "/C=US/ST=World/L=World/O=$PYDIO_HOST/CN=$PYDIO_HOST" \
-                -keyout "$PYDIO_SSL_CERT_PATH/pydio.key" \
-                -out "$PYDIO_SSL_CERT_PATH/pydio.crt"
+                -keyout "$PYDIO_CONFIG_DIR/pydio.key" \
+                -out "$PYDIO_CONFIG_DIR/pydio.crt"
         fi
-        chmod 600 "$PYDIO_SSL_CERT_PATH/pydio.key"
-        chmod 600 "$PYDIO_SSL_CERT_PATH/pydio.crt"
+        chmod 600 "$PYDIO_CONFIG_DIR/pydio.key"
+        chmod 600 "$PYDIO_CONFIG_DIR/pydio.crt"
     else
         # Turn off SSL.
-        sed -i -e "s/\s*listen\s*443\s*;/listen 80;/g" /etc/nginx/sites-enabled/pydio
-        sed -i -e "s/\s*ssl\s*on\s*;/ssl off;/g" /etc/nginx/sites-enabled/pydio
-        sed -i -e "/\s*ssl_*/d" /etc/nginx/sites-enabled/pydio
+        sed -i -e "s/\s*listen\s*443\s*.*;$/\tlisten 80;/g" /etc/nginx/sites-enabled/pydio
+        sed -i -e "s/\s*ssl\s*on\s*;/\tssl off;/g" /etc/nginx/sites-enabled/pydio
+        sed -i -e "/\s*ssl_.*/d" /etc/nginx/sites-enabled/pydio
     fi
 
     # Configure NginX.
     NGINX_CONF=/etc/nginx/nginx.conf
-    sed -i -e"s/\s*keepalive_timeout\s*65/\tkeepalive_timeout 2/" ${NGINX_CONF}
-    sed -i -e"/\s*client_max_body_size.*/d" ${NGINX_CONF}
-    sed -i -e"s/\s*keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" ${NGINX_CONF}
-    sed -i -e "s/\s*server_tokens.*/server_tokens off;/g" ${NGINX_CONF}
+    sed -i -e "s/\s*keepalive_timeout\s*65/\tkeepalive_timeout 2/" ${NGINX_CONF}
+    sed -i -e "/\s*client_max_body_size.*/d" ${NGINX_CONF}
+    sed -i -e "s/\s*keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" ${NGINX_CONF}
+    sed -i -e "s/.*server_tokens\s.*/server_tokens off;/g" ${NGINX_CONF}
+
+    # Configure Nginx so that is doesn't show its version number in the HTTP headers.
+    sed -i -e "s/.*server_tokens.*/server_tokens off;/g" ${NGINX_CONF}
 
     # Configure php-fpm.
     PHP_FPM_PHP_INI=/etc/php5/fpm/php.ini
@@ -50,6 +59,10 @@ setup_nginx()
 
     # Enable mcrypt.
     php5enmod mcrypt
+
+    # Save all into our persistent environment.
+    echo "PYDIO_HOST=$PYDIO_HOST"               >> ${PYDIO_CONFIG_FILE}
+    echo "PYDIO_SSL_ENABLED=$PYDIO_SSL_ENABLED" >> ${PYDIO_CONFIG_FILE}
 }
 
 setup_database()
@@ -70,27 +83,31 @@ setup_database()
     # Configure MySQL DB.
     sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = $DB_BIND_ADR/" /etc/mysql/my.cnf
     service mysql start
-    mysql -uroot -e "CREATE DATABASE pydio;"
-    mysql -uroot -e "CREATE USER '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS';"
+    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio;"
+    ## @todo Add "CREATE USER IF NOT EXISTS" (since MySQL 5.7.6).
+    #        This might fail if the user already exists, so guard this explicitly.
+    mysql -uroot -e "CREATE USER '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS';" || :
     mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
     mysql -uroot -e "FLUSH PRIVILEGES;"
-
-    # Set access rights.
-    chown -R mysql.mysql /var/lib/mysql/pydio
 
     # Insert scheme.
     # Taken from: https://github.com/pydio/pydio-core/blob/develop/dist/docker/create.mysql
     #mysql --user="$DB_USER" --password="$DB_PASS" pydio < /srv/pydio-scheme.mysql
 
     service mysql stop
+
+    # Set access rights.
+    chown -R mysql.mysql /var/lib/mysql/pydio
 }
 
 setup_pydio()
 {
     echo "Setting up Pydio ..."
 
-    PYDIO_PATH=/var/www/pydio-core
-    PYDIO_BOOTSTRAP_CONF=${PYDIO_PATH}/conf/bootstrap_conf.php
+    if [ -z "$PYDIO_CORE_PATH" ]; then
+        PYDIO_CORE_PATH=/var/www/pydio-core
+    fi
+    PYDIO_BOOTSTRAP_CONF=${PYDIO_CORE_PATH}/conf/bootstrap_conf.php
 
     # Force Pydio to use SSL in case we have a virtual host defined.
     if [ "$PYDIO_SSL_ENABLED" = "1" ]; then
@@ -104,22 +121,28 @@ setup_pydio()
     #fi
 
     # Set language.
-    if [ "$PYDIO_LANG" = "" ]; then
+    if [ -z "$PYDIO_LANG" ]; then
         PYDIO_LANG="en_US.UTF-8"
     fi
-
     echo "Using language: $PYDIO_LANG"
     sed -i -e"/\s*\"AJXP_LOCALE\".*/d" ${PYDIO_BOOTSTRAP_CONF}
     echo "define(\"AJXP_LOCALE\", \"$PYDIO_LANG\");" >> ${PYDIO_BOOTSTRAP_CONF}
+
+    # Save all into our persistent environment.
+    echo "PYDIO_CORE_PATH=$PYDIO_CORE_PATH" >> ${PYDIO_CONFIG_FILE}
+    echo "PYDIO_LANG=$PYDIO_LANG"           >> ${PYDIO_CONFIG_FILE}
+    echo "VIRTUAL_HOST=$VIRTUAL_HOST"       >> ${PYDIO_CONFIG_FILE}
 }
 
-echo "Setup: Installing Pydio ..."
-setup_pydio
-setup_database
-setup_nginx
+if [ -z "$PYDIO_SETUP_DONE" ]; then
+    setup_pydio
+    setup_database
+    setup_nginx
 
-echo "Setup: Done"
+    # Mark the setup as being complete.
+    echo "PYDIO_SETUP_DONE=1" >> ${PYDIO_CONFIG_FILE}
+fi
 
 if [ "$1" = "--start" ]; then
-    /srv/start-pydio.sh
+    pydio-start
 fi

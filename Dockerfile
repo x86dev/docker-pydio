@@ -10,11 +10,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     php5-gd php5-json php5-mcrypt php5-readline psmisc ssl-cert \
     ufw php-pear libgd-tools libmcrypt-dev mcrypt mysql-server mysql-client
 
-# Add Pydio as the only Nginx site.
-ADD pydio-nginx.conf /etc/nginx/sites-available/pydio
-RUN ln -s /etc/nginx/sites-available/pydio /etc/nginx/sites-enabled/pydio
-RUN rm /etc/nginx/sites-enabled/default
-
 # Install Pydio.
 RUN mkdir -p /var/www
 ENV PYDIO_VER 6.0.8
@@ -29,24 +24,25 @@ ENV DB_PASS pydio
 
 # Link volumes to actual directories.
 RUN ln -s /var/www/pydio-core/data /pydio-data
-RUN ln -s /var/lib/mysql/pydio /pydio-db
-
-# Expose ports.
-EXPOSE 80
-EXPOSE 443
+RUN ln -s /var/lib/mysql           /pydio-db
 
 # Expose volumes.
-VOLUME /pydio-data/files
-VOLUME /pydio-data/personal
+VOLUME /pydio-config
+VOLUME /pydio-data
 VOLUME /pydio-db
 
+# Add Pydio as the only Nginx site.
+ADD pydio-nginx.conf /etc/nginx/sites-available/pydio
+RUN ln -s /etc/nginx/sites-available/pydio /etc/nginx/sites-enabled/pydio
+RUN rm /etc/nginx/sites-enabled/default
+
 # Always re-configure database with current ENV when RUNning container, then monitor all services.
-RUN mkdir -p /srv
-ADD setup-pydio.sh            /srv/setup-pydio.sh
-ADD update-pydio.sh           /srv/update-pydio.sh
-ADD start-pydio.sh            /srv/start-pydio.sh
+ADD setup-pydio.sh            /usr/local/sbin/pydio-setup
+ADD update-pydio.sh           /usr/local/sbin/pydio-update
+ADD start-pydio.sh            /usr/local/sbin/pydio-start
 
 # Database stuff.
+RUN mkdir -p /srv
 ADD pydio-scheme.mysql        /srv/pydio-scheme.mysql
 ADD pydio-bootstrap.json      /srv/pydio-bootstrap.json
 
@@ -58,6 +54,6 @@ ADD service-mysql.conf        /etc/supervisor/conf.d/mysql.conf
 # Clean up.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Start setting up everything.
-WORKDIR /srv
-CMD ["/srv/setup-pydio.sh", "--start"]
+# Start up Pydio.
+WORKDIR /
+CMD ["pydio-start"]

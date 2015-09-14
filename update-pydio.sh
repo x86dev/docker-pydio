@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
-set -x
+#set -x
 
-PYDIO_CORE_PATH=/var/www/pydio-core
+# Load our environment.
+PYDIO_CONFIG_DIR=/pydio-config
+PYDIO_CONFIG_FILE=${PYDIO_CONFIG_DIR}/pydio-env.sh
+[ -f "$PYDIO_CONFIG_FILE" ] && . "$PYDIO_CONFIG_FILE"
 
 update_pydio()
 {
@@ -33,7 +36,7 @@ update_pydio()
     sed -i -e "s/%DB_PYDIO_HOST%/$DB_HOST/g"     ${PYDIO_BOOTSTRAP_JSON}
 
     # Create some files which indicate that Pydio has been installed.
-    PYDIO_CACHE_PATH=/var/www/pydio-core/data/cache
+    PYDIO_CACHE_PATH=${PYDIO_CORE_PATH}/data/cache
     ( [ ! -f "$PYDIO_CACHE_PATH/admin_counted" ]    && echo "true" > "$PYDIO_CACHE_PATH/admin_counted" )    || :
     ( [ ! -f "$PYDIO_CACHE_PATH/diag_result.php" ]  && touch "$PYDIO_CACHE_PATH/diag_result.php" )          || :
     ( [ ! -f "$PYDIO_CACHE_PATH/first_run_passed" ] && echo "true" > "$PYDIO_CACHE_PATH/first_run_passed" ) || :
@@ -54,8 +57,4 @@ echo "Update: Stopping all ..."
 supervisorctl stop all
 update_pydio
 update_common
-if [ "$1" != "--no-start" ]; then
-    echo "Update: Starting all ..."
-    supervisorctl start all
-fi
 echo "Update: Done."
