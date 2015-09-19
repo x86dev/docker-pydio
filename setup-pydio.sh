@@ -8,6 +8,26 @@ PYDIO_CONFIG_DIR=/pydio-config
 PYDIO_CONFIG_FILE=${PYDIO_CONFIG_DIR}/pydio-env.sh
 [ -f "$PYDIO_CONFIG_FILE" ] && . "$PYDIO_CONFIG_FILE"
 
+SED="sed -i -e"
+
+nginx_cfg_modify()
+{
+    echo "$3: Setting '$1' to '$2' ..."
+    ${SED} -i -e "s/\(.*\s*$1\s*.*\).*/$1 $2; # Changed for Pydio/g" $3
+}
+
+nginx_cfg_delete()
+{
+    echo "$2: Deleting '$1' ..."
+    ${SED} -i -e "/\s*$1\s*.*/d" $2
+}
+
+phpfpm_cfg_modify()
+{
+    echo "$3: Setting '$1' to '$2' ..."
+    ${SED} "s/\(.*\s*$1\s*=.*\).*/$1 = $2 ; Changed for Pydio/g" $3
+}
+
 setup_nginx()
 {
     if [ -z "$PYDIO_HOST" ]; then
@@ -29,33 +49,30 @@ setup_nginx()
         chmod 600 "$PYDIO_CONFIG_DIR/pydio.key"
         chmod 600 "$PYDIO_CONFIG_DIR/pydio.crt"
     else
+        NGINX_SITE_PYDIO=/etc/nginx/sites-enabled/pydio
         # Turn off SSL.
-        sed -i -e "s/\s*listen\s*443\s*.*;$/\tlisten 80;/g" /etc/nginx/sites-enabled/pydio
-        sed -i -e "s/\s*ssl\s*on\s*;/\tssl off;/g" /etc/nginx/sites-enabled/pydio
-        sed -i -e "/\s*ssl_.*/d" /etc/nginx/sites-enabled/pydio
+        nginx_cfg_modify "listen" "80" "$NGINX_SITE_PYDIO"
+        nginx_cfg_modify "ssl" "off"   "$NGINX_SITE_PYDIO"
+        nginx_cfg_delete "ssl_.*"      "$NGINX_SITE_PYDIO"
     fi
 
     # Configure NginX.
     NGINX_CONF=/etc/nginx/nginx.conf
-    sed -i -e "s/\s*keepalive_timeout\s*65/\tkeepalive_timeout 2/" ${NGINX_CONF}
-    sed -i -e "/\s*client_max_body_size.*/d" ${NGINX_CONF}
-    sed -i -e "s/\s*keepalive_timeout 2/keepalive_timeout 2;\n\tclient_max_body_size 100m/" ${NGINX_CONF}
-    sed -i -e "s/.*server_tokens\s.*/server_tokens off;/g" ${NGINX_CONF}
-
-    # Configure Nginx so that is doesn't show its version number in the HTTP headers.
-    sed -i -e "s/.*server_tokens.*/server_tokens off;/g" ${NGINX_CONF}
+    nginx_cfg_modify "keepalive_timeout" "2"       "$NGINX_CONF"
+    nginx_cfg_modify "client_max_body_size" "100m" "$NGINX_CONF"
+    nginx_cfg_modify "server_tokens" "off"         "$NGINX_CONF"
 
     # Configure php-fpm.
     PHP_FPM_PHP_INI=/etc/php5/fpm/php.ini
-    sed -i -e "s/output_buffering\s*=\s*4096/output_buffering = off/g" ${PHP_FPM_PHP_INI}
-    sed -i -e "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g" ${PHP_FPM_PHP_INI}
-    sed -i -e "s/upload_max_filesize\s*=\s*2M/upload_max_filesize = 1G/g" ${PHP_FPM_PHP_INI}
-    sed -i -e "s/post_max_size\s*=\s*8M/post_max_size = 1G/g" ${PHP_FPM_PHP_INI}
+    phpfpm_cfg_modify "output_buffering" "off"   "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "cgi.fix_pathinfo" "0"     "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "upload_max_filesize" "1G" "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "post_max_size" "1G"       "$PHP_FPM_PHP_INI"
 
     # Patch php5-fpm configuration so that it does not daemonize itself. This is
     # needed so that runit can watch its state and restart it if it crashes etc.
     PHP_FPM_CONF=/etc/php5/fpm/php-fpm.conf
-    sed -i -e "s/;daemonize\s*=\s*yes/daemonize = no/g" ${PHP_FPM_CONF}
+    php-fpm_cfg_modify "daemonize" "no"           "$PHP_FPM_PHP_INI"
 
     # Enable mcrypt.
     php5enmod mcrypt
