@@ -76,10 +76,6 @@ setup_nginx()
 
     # Enable mcrypt.
     php5enmod mcrypt
-
-    # Save all into our persistent environment.
-    echo "PYDIO_HOST=$PYDIO_HOST"               >> ${PYDIO_CONFIG_FILE}
-    echo "PYDIO_SSL_ENABLED=$PYDIO_SSL_ENABLED" >> ${PYDIO_CONFIG_FILE}
 }
 
 setup_database()
@@ -144,22 +140,46 @@ setup_pydio()
     echo "Using language: $PYDIO_LANG"
     sed -i -e"/\s*\"AJXP_LOCALE\".*/d" ${PYDIO_BOOTSTRAP_CONF}
     echo "define(\"AJXP_LOCALE\", \"$PYDIO_LANG\");" >> ${PYDIO_BOOTSTRAP_CONF}
-
-    # Save all into our persistent environment.
-    echo "PYDIO_CORE_PATH=$PYDIO_CORE_PATH" >> ${PYDIO_CONFIG_FILE}
-    echo "PYDIO_LANG=$PYDIO_LANG"           >> ${PYDIO_CONFIG_FILE}
-    echo "VIRTUAL_HOST=$VIRTUAL_HOST"       >> ${PYDIO_CONFIG_FILE}
 }
 
-if [ -z "$PYDIO_SETUP_DONE" ]; then
-    setup_pydio
-    setup_database
-    setup_nginx
+write_config()
+{
+    echo "Writing configuration to: $PYDIO_CONFIG_FILE"
+    echo "PYDIO_HOST=$PYDIO_HOST"               >> ${PYDIO_CONFIG_FILE}
+    echo "PYDIO_SSL_ENABLED=$PYDIO_SSL_ENABLED" >> ${PYDIO_CONFIG_FILE}
+    echo "PYDIO_CORE_PATH=$PYDIO_CORE_PATH"     >> ${PYDIO_CONFIG_FILE}
+    echo "PYDIO_LANG=$PYDIO_LANG"               >> ${PYDIO_CONFIG_FILE}
+    echo "VIRTUAL_HOST=$VIRTUAL_HOST"           >> ${PYDIO_CONFIG_FILE}
+}
 
-    # Mark the setup as being complete.
-    echo "PYDIO_SETUP_DONE=1" >> ${PYDIO_CONFIG_FILE}
+while [ $# != 0 ]; do
+    CUR_PARM="$1"
+    shift
+    case "$CUR_PARM" in
+        --initial)
+            SCRIPT_WRITE_CONFIG=1
+            ;;
+        --start)
+            SCRIPT_START=1
+            ;;
+        *)
+            ;;
+    esac
+done
+
+setup_pydio
+setup_database
+setup_nginx
+
+# Do we need to write the configuration file because we don't have one yet?
+if [ ! -f "$PYDIO_CONFIG_FILE" ]; then
+    SCRIPT_WRITE_CONFIG=1
+if
+
+if [ "$SCRIPT_WRITE_CONFIG" = "1" ]; then
+    write_config
 fi
 
-if [ "$1" = "--start" ]; then
+if [ -n "$SCRIPT_START" ]; then
     pydio-start
 fi
