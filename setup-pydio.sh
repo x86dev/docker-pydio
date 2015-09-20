@@ -13,13 +13,13 @@ SED="sed -i -e"
 nginx_cfg_modify()
 {
     echo "$3: Setting '$1' to '$2' ..."
-    ${SED} -i -e "s/\(.*\s*$1\s*.*\).*/$1 $2; # Changed for Pydio/g" $3
+    ${SED} "s/\(.*\s*$1\s.*\).*/$1 $2; # Changed for Pydio/g" $3
 }
 
 nginx_cfg_delete()
 {
     echo "$2: Deleting '$1' ..."
-    ${SED} -i -e "/\s*$1\s*.*/d" $2
+    ${SED} "/\s*$1\s*.*/d" $2
 }
 
 phpfpm_cfg_modify()
@@ -64,15 +64,15 @@ setup_nginx()
 
     # Configure php-fpm.
     PHP_FPM_PHP_INI=/etc/php5/fpm/php.ini
-    phpfpm_cfg_modify "output_buffering" "off"   "$PHP_FPM_PHP_INI"
-    phpfpm_cfg_modify "cgi.fix_pathinfo" "0"     "$PHP_FPM_PHP_INI"
-    phpfpm_cfg_modify "upload_max_filesize" "1G" "$PHP_FPM_PHP_INI"
-    phpfpm_cfg_modify "post_max_size" "1G"       "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "output_buffering" "off"    "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "cgi.fix_pathinfo" "0"      "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "upload_max_filesize" "64M" "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "post_max_size" "96M"       "$PHP_FPM_PHP_INI"
 
     # Patch php5-fpm configuration so that it does not daemonize itself. This is
     # needed so that runit can watch its state and restart it if it crashes etc.
     PHP_FPM_CONF=/etc/php5/fpm/php-fpm.conf
-    php-fpm_cfg_modify "daemonize" "no"           "$PHP_FPM_PHP_INI"
+    phpfpm_cfg_modify "daemonize" "no"            "$PHP_FPM_CONF"
 
     # Enable mcrypt.
     php5enmod mcrypt
@@ -174,7 +174,7 @@ setup_nginx
 # Do we need to write the configuration file because we don't have one yet?
 if [ ! -f "$PYDIO_CONFIG_FILE" ]; then
     SCRIPT_WRITE_CONFIG=1
-if
+fi
 
 if [ "$SCRIPT_WRITE_CONFIG" = "1" ]; then
     write_config
