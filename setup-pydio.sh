@@ -109,10 +109,12 @@ setup_database()
     service mysql start
 
     # Make sure that the Debian maintenance user has full access rights.
-    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'$DB_HOST' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
+    mysql -u root -e "FLUSH PRIVILEGES;"
+    service mysql restart
 
     # Create database for Pydio.
-    MYSQL_CMD="mysql -u debian-sys-maint -e"
+    MYSQL_CMD="mysql -u debian-sys-maint --password=$DB_PASS -e"
     ${MYSQL_CMD} "CREATE DATABASE IF NOT EXISTS pydio;"
     ## @todo Add "CREATE USER IF NOT EXISTS" (since MySQL 5.7.6).
     #        This might fail if the user already exists, so guard this explicitly.
