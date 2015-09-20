@@ -28,6 +28,12 @@ phpfpm_cfg_modify()
     ${SED} "s/\(.*\s*$1\s*=.*\).*/$1 = $2 ; Changed for Pydio/g" $3
 }
 
+mysqldebiancnf_modify()
+{
+    echo "$3: Setting '$1' to '$2' ..."
+    ${SED} "s/\(.*\s*$1\s*=.*\).*/$1 = $2/g" $3
+}
+
 setup_nginx()
 {
     if [ -z "$PYDIO_HOST" ]; then
@@ -93,15 +99,26 @@ setup_database()
 
     echo "Setting up database: $DB_HOST ($DB_BIND_ADR) for user '$DB_USER' ..."
 
-    # Configure MySQL DB.
+    # Tweak the Debian maintenance user so that is also knows our DB password.
+    # By default this user has a randomly set password we have to change to ours first.
+    # Otherwise mysqld cannot be started/stopped correctly.
+    mysqldebiancnf_modify "password" "$DB_PASS" /etc/mysql/debian.cnf
+
+    # Configure and start MySQL DB.
     sed -i -e"s/^bind-address\s*=\s*127.0.0.1/bind-address = $DB_BIND_ADR/" /etc/mysql/my.cnf
     service mysql start
-    mysql -uroot -e "CREATE DATABASE IF NOT EXISTS pydio;"
+
+    # Make sure that the Debian maintenance user has full access rights.
+    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
+
+    # Create database for Pydio.
+    MYSQL_CMD="mysql -u debian-sys-maint -e"
+    ${MYSQL_CMD} "CREATE DATABASE IF NOT EXISTS pydio;"
     ## @todo Add "CREATE USER IF NOT EXISTS" (since MySQL 5.7.6).
     #        This might fail if the user already exists, so guard this explicitly.
-    mysql -uroot -e "CREATE USER '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS';" || :
-    mysql -uroot -e "GRANT ALL PRIVILEGES ON *.* TO '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
-    mysql -uroot -e "FLUSH PRIVILEGES;"
+    ${MYSQL_CMD} "CREATE USER '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS';" || :
+    ${MYSQL_CMD} "GRANT ALL PRIVILEGES ON *.* TO '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS' WITH GRANT OPTION;"
+    ${MYSQL_CMD} "FLUSH PRIVILEGES;"
 
     # Insert scheme.
     # Taken from: https://github.com/pydio/pydio-core/blob/develop/dist/docker/create.mysql
