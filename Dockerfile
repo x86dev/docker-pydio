@@ -7,15 +7,22 @@ MAINTAINER Andreas Löffler <andy@x86dev.com>
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
     wget nginx fontconfig-config fonts-dejavu-core \
     php5-fpm php5-common php5-json php5-cli php5-common php5-mysql \
-    php5-gd php5-json php5-mcrypt php5-readline psmisc ssl-cert \
+    php5-gd php5-json php5-mcrypt php5-readline psmisc ssl-cert git \
     ufw php-pear libgd-tools libmcrypt-dev mcrypt mysql-server mysql-client
 
 # Install Pydio.
 RUN mkdir -p /var/www
-ENV PYDIO_VER 6.0.8
+ENV PYDIO_VER 6.2.0
 RUN wget -P /tmp http://downloads.sourceforge.net/project/ajaxplorer/pydio/stable-channel/${PYDIO_VER}/pydio-core-${PYDIO_VER}.tar.gz
 RUN tar xvzf /tmp/pydio-core-${PYDIO_VER}.tar.gz -C /tmp
 RUN mv /tmp/pydio-core-${PYDIO_VER} /var/www/pydio-core
+
+# Install VersionControl_Git to allow file-versioning through git.
+RUN pear install VersionControl_Git
+
+# Expose Nginx ports.
+EXPOSE 80
+EXPOSE 443
 
 # Expose default database credentials via ENV in order to ease overwriting.
 ENV DB_NAME pydio
