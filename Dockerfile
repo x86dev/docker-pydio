@@ -18,7 +18,7 @@ RUN tar xvzf /tmp/pydio-core-${PYDIO_VER}.tar.gz -C /tmp
 RUN mv /tmp/pydio-core-${PYDIO_VER} /var/www/pydio-core
 
 # Install VersionControl_Git to allow file-versioning through git.
-RUN pear install VersionControl_Git
+RUN pear install channel://pear.php.net/VersionControl_Git-0.4.4
 
 # Expose Nginx ports.
 EXPOSE 80
